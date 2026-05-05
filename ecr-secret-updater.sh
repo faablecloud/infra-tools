@@ -7,11 +7,12 @@ set -e
 echo "Iniciando script de actualización de ECR..."
 
 # 1. Validar que las variables de entorno necesarias existan
-if [ -z "$AWS_REGION" ] || [ -z "$AWS_ACCOUNT" ] || [ -z "$DOCKER_SECRET_NAME" ]; then
-  echo "❌ ERROR: Faltan variables de entorno. Asegúrate de definir AWS_REGION, AWS_ACCOUNT y DOCKER_SECRET_NAME en el Pod."
+# Se añade TARGET_NAMESPACES a la lista de validación obligatoria
+if [ -z "$AWS_REGION" ] || [ -z "$AWS_ACCOUNT" ] || [ -z "$DOCKER_SECRET_NAME" ] || [ -z "$TARGET_NAMESPACES" ]; then
+  echo "❌ ERROR: Faltan variables de entorno obligatorias."
+  echo "Asegúrate de definir: AWS_REGION, AWS_ACCOUNT, DOCKER_SECRET_NAME y TARGET_NAMESPACES."
   exit 1
 fi
-
 # Asignar namespace por defecto si no viene como variable de entorno
 NAMESPACE="${NAMESPACE:-default}"
 
@@ -32,7 +33,6 @@ kubectl create secret docker-registry "${DOCKER_SECRET_NAME}" \
   --namespace="${NAMESPACE}"
 
 # 5. Anotar el secreto para que kubernetes-replicator lo copie
-TARGET_NAMESPACES=faableauth,faable-deploy,argocd
 echo "Anotando el secreto para replicación en $TARGET_NAMESPACES..."
 kubectl annotate secret "${DOCKER_SECRET_NAME}" replicator.v1.mittwald.de/replicate-to="${TARGET_NAMESPACES}" --namespace="${NAMESPACE}"
 
